@@ -258,14 +258,46 @@ suite('convert(tags, template)', () => {
             });
             test('Empty replacement {{ }} is not output', () => {
                 strictEqual(
-                    convert({}, '{{ }}abc{{\t\n}}test\n'),
-                    "abctest\n"
+                    convert({}, ' {{ }}abc{{\t\n}}test\n'),
+                    " abctest\n"
                 );
             });
-            test('Cancel trailing line breaks', () => {
+            test('Remove leading blanks', () => {
                 strictEqual(
-                    convert({}, '{{// comment}}_\r\n_\n\n_\ntest\n'),
-                    "\n_\ntest\n"
+                    convert({}, '\t \t{{_// comment}}test  {{_ }} \n'),
+                    "test \n"
+                );
+                strictEqual(
+                    convert({}, '\t \t{{__}} \n'),
+                    "\n"
+                );
+            });
+            test('Remove following blanks', () => {
+                strictEqual(
+                    convert({}, '{{ _}}\t   \r\n_\n_\ntest\n'),
+                    "\r\n_\n_\ntest\n"
+                );
+                strictEqual(
+                    convert({}, '{{ _}}_\r\n_\n_\ntest\n'),
+                    "_\r\n_\n_\ntest\n"
+                );
+            });
+            test('Remove trailing line breaks', () => {
+                strictEqual( // No effect
+                    convert({}, '{{// comment}}_  \r\n _\ntest\n'),
+                    "_  \r\n _\ntest\n"
+                );
+                strictEqual( // Remove trailing line breaks
+                    convert({}, '{{// comment}}_\r\n_\ntest\n'),
+                    "_\ntest\n"
+                );
+                strictEqual( // Remove trailing line breaks
+                    convert({}, '{{// comment}}_\r\n\n\r\n_\ntest\n'),
+                    "_\ntest\n"
+                );
+                strictEqual( // Interrupt removal
+                    convert({}, '{{// comment}}_\r\n\n {{__}} \r\n_\ntest\n'),
+                    "\r\n_\ntest\n"
                 );
             });
         });
@@ -332,6 +364,9 @@ suite('convert(tags, template)', () => {
             }, SyntaxError);
             throws(() => {
                 convert({}, 'r41: {{name}}r42 }} r43');
+            }, SyntaxError);
+            throws(() => {
+                convert({}, 'r51: {{_}} r52');
             }, SyntaxError);
         });
     });

@@ -20,7 +20,7 @@ function isLimitedExpression(es_expression) {
     ) return true;
     if (
         type === 'AssignmentExpression' &&
-        ['=', '+=', '-=', '*=', '**=', '/=', '%=', '&&=', '||=',  '??='].includes(operator) &&
+        ['=', '+=', '-=', '*=', '**=', '/=', '%=', '&&=', '||=', '??='].includes(operator) &&
         es_expression.left.type === "Identifier" &&
         isLimitedExpression(es_expression.right)
     ) return true;
@@ -356,8 +356,8 @@ export function parseToDOM(template) {
         text: "",
         contents: []
     };
-    const reg_left = /\{\{/g; // looking for '{{' 
-    const reg_right = /\}\}(_\r?\n)*/g; // looking for '}}_\n' 或 '}}'
+    const reg_left = /[ \t]*\{\{_|\{\{/g; // looking for '{{' or ' {{_'
+    const reg_right = /_\}\}[ \t]*|\}\}_(\r?\n)+|\}\}/g; // looking for '}}_\n' 或 '}}'
     let current_index = 0;
     let current_range = [0, 0, 0]; // [left_index, right_index, wrong_index]
 
@@ -390,6 +390,7 @@ export function parseToDOM(template) {
             current_range[2] = content_right;
             throw_wrong_pair(template, raw_range);
         }
+
         const gtcode = template.substring(content_left, content_right).trim();
         const goonode = GTCode2Goonode(gtcode);
         goonode.range = [range_left, content_left, content_right, range_right];

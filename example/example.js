@@ -24,19 +24,19 @@ const tags = {
 
 const template = `{{no = 0}}_
 {{for tyrant in tyrants}}_
-这是一个关于{{tyrant.name}}的测试
+  {{_ }}这是一个关于{{tyrant.name}}的测试
 
-{{tyrant.name}}的ID: {{tyrant.ID}}
-{{if tyrant.peoples.length==0}}_
-**手下没人!**
-{{else}}_
-身边的打手(大于40岁):
-{{  for people in tyrant.peoples}}{{no=no+1}}_
-{{   if people.age > 40 }}_
-* {{no}}:{{people.name}}
-{{   endif // people.age}}_
-{{  endfor}}_
-{{endif}}_
+  {{_ }}{{tyrant.name}}的ID: {{tyrant.ID}}
+  {{_if tyrant.peoples.length==0}}_
+    {{_ }}**手下没人!**
+  {{_else}}_
+    {{_ }}身边的打手(大于40岁):
+    {{_for people in tyrant.peoples}}{{no=no+1}}_
+      {{_if people.age > 40 }}_
+        {{_ }}* {{no}}:{{people.name}}
+      {{_endif // people.age}}_
+    {{_endfor}}_
+  {{_endif}}
 
 {{endfor}}`
 
