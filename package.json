@@ -1,29 +1,28 @@
 {
     "name": "gooconverter",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "type": "module",
     "description": "gen string from template",
     "main": "lib/index.cjs",
     "exports": {
-        "require": "./lib/index.cjs",
-        "default": "./lib/index.js"
+        ".": {
+            "import": "./lib/index.js",
+            "require": "./lib/index.cjs"
+        }
     },
     "engines": {
         "node": ">=14.8.0"
     },
     "devDependencies": {
-        "@rollup/plugin-commonjs": "^28.0.1",
-        "@rollup/plugin-json": "^6.1.0",
-        "@rollup/plugin-node-resolve": "^15.3.0",
         "acorn": "^8.14.0",
-        "rollup": "~4.26.0"
+        "rolldown": "^1.1.1"
     },
     "directories": {
         "lib": "lib"
     },
     "scripts": {
-        "build": "rollup -c",
-        "dev": "rollup -c -w",
+        "build": "rolldown -c",
+        "dev": "rolldown -c -w",
         "test": "node --test",
         "setup": "pnpm install",
         "prepare": "pnpm build"

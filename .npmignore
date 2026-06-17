@@ -2,6 +2,6 @@
 .vscode/
 .eslintrc.*
 node_modules/
-rollup.config.js
+rolldown.config.js
 src/
 test/
