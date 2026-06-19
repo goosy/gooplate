@@ -1,0 +1,31 @@
+{
+    "name": "@fdcn/gooplate",
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": "Generate strings from templates with placeholders — fast, lightweight ESM string interpolation library",
+    "exports": {
+        ".": "./lib/index.js"
+    },
+    "imports": {
+        "acorn": "npm:acorn@^8.17.0"
+    },
+    "publish": {
+        "exclude": [
+            "!lib/",
+            "lib/index.cjs",
+            "src/",
+            "test/",
+            "rolldown.config.js",
+            "tsconfig.json",
+            "*.config.ts"
+        ]
+    },
+    "compilerOptions": {
+        "strict": true
+    },
+    "tasks": {
+        "test": "deno test --allow-read test/test.js",
+        "publish": "deno publish"
+    },
+    "nodeModulesDir": "auto"
+}
