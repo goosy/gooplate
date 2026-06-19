@@ -1,8 +1,8 @@
 export {
     convert,
-    convertRules
+    convert_rules
 } from "./converter.js";
 
 export {
-    parseToDOM
+    parse_to_dom
 } from "./gooparse.js";

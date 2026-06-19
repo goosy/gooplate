@@ -9,7 +9,7 @@
 
 import { parse } from 'acorn';
 
-function isLimitedExpression(es_expression) {
+function is_limited_expression(es_expression) {
     const {
         type,
         operator
@@ -22,57 +22,57 @@ function isLimitedExpression(es_expression) {
         type === 'AssignmentExpression' &&
         ['=', '+=', '-=', '*=', '**=', '/=', '%=', '&&=', '||=', '??='].includes(operator) &&
         es_expression.left.type === "Identifier" &&
-        isLimitedExpression(es_expression.right)
+        is_limited_expression(es_expression.right)
     ) return true;
     if (
         type === 'UnaryExpression' &&
         ['+', '-', '~', '!'].includes(operator) &&
-        isLimitedExpression(es_expression.argument)
+        is_limited_expression(es_expression.argument)
     ) return true;
     if (
         type === 'BinaryExpression' &&
         ['in', '+', '-', '*', '/', '%', '==', '===', '!=', '!==', '<', '>', '<=', '>='].includes(operator) &&
-        isLimitedExpression(es_expression.left) &&
-        isLimitedExpression(es_expression.right)
+        is_limited_expression(es_expression.left) &&
+        is_limited_expression(es_expression.right)
     ) return true;
     if (
         type === "ChainExpression" &&
-        isLimitedExpression(es_expression.expression)
+        is_limited_expression(es_expression.expression)
     ) return true;
     if (
         type === "MemberExpression" &&
-        isLimitedExpression(es_expression.object) &&
-        isLimitedExpression(es_expression.property)
+        is_limited_expression(es_expression.object) &&
+        is_limited_expression(es_expression.property)
     ) return true;
     if (
         type === 'SequenceExpression' &&
-        !es_expression.expressions.find(e => !isLimitedExpression(e))
+        !es_expression.expressions.find(e => !is_limited_expression(e))
     ) return true;
     if (
         type === 'LogicalExpression' &&
         (operator === '||' || operator === '&&' || operator === '??') &&
-        isLimitedExpression(es_expression.left) &&
-        isLimitedExpression(es_expression.right)
+        is_limited_expression(es_expression.left) &&
+        is_limited_expression(es_expression.right)
     ) return true;
     if ( // ternary operator ? :
         type === "ConditionalExpression" &&
-        isLimitedExpression(es_expression.test) &&
-        isLimitedExpression(es_expression.consequent) &&
-        isLimitedExpression(es_expression.alternate)
+        is_limited_expression(es_expression.test) &&
+        is_limited_expression(es_expression.consequent) &&
+        is_limited_expression(es_expression.alternate)
     ) return true;
     function is_spread_element(expr) { // spread operator
-        return expr.type === "SpreadElement" && isLimitedExpression(expr.argument);
+        return expr.type === "SpreadElement" && is_limited_expression(expr.argument);
     }
     if ( // call 运算符
         type === "CallExpression" &&
         ['Identifier', 'MemberExpression'].includes(es_expression.callee.type) &&
-        isLimitedExpression(es_expression.callee) &&
-        es_expression.arguments.every(argu => is_spread_element(argu) || isLimitedExpression(argu))
+        is_limited_expression(es_expression.callee) &&
+        es_expression.arguments.every(argu => is_spread_element(argu) || is_limited_expression(argu))
     ) return true;
     if ( // [expr1, expr2, ...]
         type === "ArrayExpression" &&
         es_expression.elements.every(element => {
-            return is_spread_element(element) || isLimitedExpression(element);
+            return is_spread_element(element) || is_limited_expression(element);
         })
     ) return true;
     if ( // {a: expr1, expr2, ...expr3}
@@ -80,7 +80,7 @@ function isLimitedExpression(es_expression) {
         es_expression.properties.every(prop => {
             if (is_spread_element(prop)) return true;
             if (prop.type === "Property") {
-                return isLimitedExpression(prop.key) && isLimitedExpression(prop.value);
+                return is_limited_expression(prop.key) && is_limited_expression(prop.value);
             }
             return false;
         })
@@ -104,7 +104,7 @@ function parse_es_expression(code) {
     if (ast.body.length !== 1) throw error;
     if (ast.body[0].type !== 'ExpressionStatement') throw error;
     const es_expression = ast.body[0].expression;
-    if (!isLimitedExpression(es_expression)) throw error;
+    if (!is_limited_expression(es_expression)) throw error;
     return es_expression;
 }
 
@@ -112,7 +112,7 @@ function parse_es_expression(code) {
  * 
  * @param {string} code 
  */
-function parse_esforloop_expression(code) {
+function parse_es_forloop_expression(code) {
     const error = SyntaxError("for expression syntax error");
     let expression = parse_es_expression(code)
     if (expression.type === 'BinaryExpression') return expression;
@@ -141,12 +141,12 @@ let current_node;
 
 /**
  * Analyze GTCode, classified as one of several Goonodes: if endif for endfor raw let comment
- * @param {string} GTCode 
+ * @param {string} gt_code 
  * @return {Goonode}
  */
-function GTCode2Goonode(GTCode) {
+function gt_code_to_goonode(gt_code) {
     const contents = [];
-    const gtcode = GTCode.replace(/^(\s*(\/\/.*)?\r?\n)+/, '');
+    const gtcode = gt_code.replace(/^(\s*(\/\/.*)?\r?\n)+/, '');
 
     // meet {{if expression }}
     if (gtcode.startsWith('if')) {
@@ -209,7 +209,7 @@ function GTCode2Goonode(GTCode) {
         const error = SyntaxError("for expression syntax error!");
         const text = gtcode.replace(/^for\s+/, '');
         if (text === gtcode) throw error;
-        const expression = parse_esforloop_expression(text);
+        const expression = parse_es_forloop_expression(text);
         return {
             type: "for",
             text,
@@ -232,7 +232,7 @@ function GTCode2Goonode(GTCode) {
     const expression = parse_es_expression(gtcode);
     if (expression === null) return {
         type: "comment",
-        text: GTCode.trim(),
+        text: gt_code.trim(),
     };
 
     // meet {{expression}}
@@ -264,7 +264,7 @@ function stack_pop() {
  * @param {Goonode} code 
  */
 
-function GT_tree_append(code) {
+function gt_tree_append(code) {
 
     // gen ifs[] if[]
     if (code.type === "ifs") {
@@ -348,7 +348,7 @@ content 内容: ${template.substring(left, right)}`);
  * 
  * @param {string} template
  */
-export function parseToDOM(template) {
+export function parse_to_dom(template) {
 
     // init document
     current_node = document = {
@@ -376,7 +376,7 @@ export function parseToDOM(template) {
             contents: [],
             range: [raw_range[0], ...raw_range, raw_range[1]],
         }
-        GT_tree_append(raw_node);
+        gt_tree_append(raw_node);
 
         const match_r = reg_right.exec(template);
         if (!match_r) {
@@ -392,9 +392,9 @@ export function parseToDOM(template) {
         }
 
         const gtcode = template.substring(content_left, content_right).trim();
-        const goonode = GTCode2Goonode(gtcode);
+        const goonode = gt_code_to_goonode(gtcode);
         goonode.range = [range_left, content_left, content_right, range_right];
-        GT_tree_append(goonode);
+        gt_tree_append(goonode);
         current_index = range_right;
         current_range = [range_left, range_right];
     }

@@ -1,4 +1,4 @@
-import { convertRules } from "../src/index.js";
+import { convert_rules } from "../src/index.js";
 const rules = [{
     "name": "station_GD8",
     "tags": {
@@ -29,7 +29,7 @@ people:
 {{endfor}}_
 `;
 
-for (const { name, content } of convertRules(rules, template)) {
+for (const { name, content } of convert_rules(rules, template)) {
     console.log(`${name}\n=======`);
     console.log(content);
 }

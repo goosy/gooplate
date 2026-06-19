@@ -6,7 +6,7 @@
  * @typedef {Rule[]} Rules Conversion rule table
  */
 
-import { parseToDOM } from "./gooparse.js";
+import { parse_to_dom } from "./gooparse.js";
 
 /**
  * @param {Tags} tags tags dict for template
@@ -14,7 +14,7 @@ import { parseToDOM } from "./gooparse.js";
  * @return {string}
  */
 export function convert(tags, template) {
-    return convert_dom(tags, parseToDOM(template));
+    return convert_dom(tags, parse_to_dom(template));
 }
 
 /**
@@ -22,17 +22,17 @@ export function convert(tags, template) {
  * @param {string} template
  * @return {Array.<{"name": string, "content": string}>}
  */
-export function convertRules(rules, template) {
+export function convert_rules(rules, template) {
     return rules.map(rule => ({
         name: rule.name,
         content: convert(rule.tags, template)
     }));
 }
 
-function parseMemberExpression(tags, es_expression) {
-    const obj = computeESExpression(tags, es_expression.object);
+function parse_member_expression(tags, es_expression) {
+    const obj = compute_es_expression(tags, es_expression.object);
     const property = es_expression.computed ?
-        computeESExpression(tags, es_expression.property) :
+        compute_es_expression(tags, es_expression.property) :
         es_expression.property.name;
     return { obj, property };
 }
@@ -74,7 +74,7 @@ const global_tags = {
  * @param {AST} es_expression
  * @return {*}
  */
-function computeESExpression(tags, es_expression) {
+function compute_es_expression(tags, es_expression) {
     // 'Identifier' 'AssignmentExpression' 'BinaryExpression' 'Literal'
     if (es_expression.type === "Literal") return es_expression.value;
     if (es_expression.type === "Identifier") {
@@ -83,20 +83,20 @@ function computeESExpression(tags, es_expression) {
 
     // obj.foo
     if (es_expression.type === "MemberExpression") {
-        const { obj, property } = parseMemberExpression(tags, es_expression);
+        const { obj, property } = parse_member_expression(tags, es_expression);
         return obj[property];
     }
 
     // obj?.foo
     if (es_expression.type === "ChainExpression") {
-        const { obj, property } = parseMemberExpression(tags, es_expression.expression);
+        const { obj, property } = parse_member_expression(tags, es_expression.expression);
         if (obj === null || obj === undefined) return undefined;
         return obj[property];
     }
 
     // +expr -expr ~expr !expr
     if (es_expression.type === 'UnaryExpression') {
-        const result = computeESExpression(tags, es_expression.argument);
+        const result = compute_es_expression(tags, es_expression.argument);
         if (es_expression.operator === '+') return +result;
         if (es_expression.operator === '-') return -result;
         if (es_expression.operator === '~') return ~result;
@@ -108,8 +108,8 @@ function computeESExpression(tags, es_expression) {
         es_expression.type === 'BinaryExpression' ||
         es_expression.type === 'LogicalExpression'
     ) {
-        const left = computeESExpression(tags, es_expression.left);
-        const right = computeESExpression(tags, es_expression.right);
+        const left = compute_es_expression(tags, es_expression.left);
+        const right = compute_es_expression(tags, es_expression.right);
         switch (es_expression.operator) {
             case '+':
                 return left + right;
@@ -153,16 +153,16 @@ function computeESExpression(tags, es_expression) {
     // expr1, expr2, ..., exprN
     if (es_expression.type === 'SequenceExpression') {
         return es_expression.expressions.reduce(
-            (str, exp) => str + computeESExpression(tags, exp),
+            (str, exp) => str + compute_es_expression(tags, exp),
             ""
         );
     }
 
     // expr1 ? expr2 : expr3
     if (es_expression.type === 'ConditionalExpression') {
-        const test = computeESExpression(tags, es_expression.test);
-        const consequent = computeESExpression(tags, es_expression.consequent);
-        const alternate = computeESExpression(tags, es_expression.alternate);
+        const test = compute_es_expression(tags, es_expression.test);
+        const consequent = compute_es_expression(tags, es_expression.consequent);
+        const alternate = compute_es_expression(tags, es_expression.alternate);
         return test ? consequent : alternate;
     }
 
@@ -180,7 +180,7 @@ function computeESExpression(tags, es_expression) {
         es_expression.type === 'AssignmentExpression'
     ) {
         const left = es_expression.left.name;
-        const right = computeESExpression(tags, es_expression.right);
+        const right = compute_es_expression(tags, es_expression.right);
         switch (es_expression.operator) {
             case '=':
                 tags[left] = right;
@@ -220,17 +220,17 @@ function computeESExpression(tags, es_expression) {
         const argus = [];
         for (const argu of es_expression.arguments) {
             if (argu.type === "SpreadElement") {
-                argus.push(...computeESExpression(tags, argu.argument));
+                argus.push(...compute_es_expression(tags, argu.argument));
             } else {
-                argus.push(computeESExpression(tags, argu));
+                argus.push(compute_es_expression(tags, argu));
             }
         }
         const callee = es_expression.callee;
         if (callee.type === "Identifier") {
-            return computeESExpression(tags, callee)(...argus);
+            return compute_es_expression(tags, callee)(...argus);
         }
         if (callee.type === "MemberExpression") {
-            const { obj, property } = parseMemberExpression(tags, callee);
+            const { obj, property } = parse_member_expression(tags, callee);
             return obj[property](...argus);
         }
         return '';
@@ -241,9 +241,9 @@ function computeESExpression(tags, es_expression) {
         const ret = [];
         for (const el of es_expression.elements) {
             if (el.type === "SpreadElement") {
-                ret.push(...computeESExpression(tags, el.argument));
+                ret.push(...compute_es_expression(tags, el.argument));
             } else {
-                ret.push(computeESExpression(tags, el));
+                ret.push(compute_es_expression(tags, el));
             }
         }
         return ret;
@@ -254,13 +254,13 @@ function computeESExpression(tags, es_expression) {
         const ret = {};
         for (const prop of es_expression.properties) {
             if (prop.type === "SpreadElement") {
-                Object.assign(ret, computeESExpression(tags, prop.argument));
+                Object.assign(ret, compute_es_expression(tags, prop.argument));
             }
             if (prop.type === "Property") {
                 const key = prop.computed
-                    ? computeESExpression(tags, prop.key)
+                    ? compute_es_expression(tags, prop.key)
                     : prop.key.name;
-                const value = computeESExpression(tags, prop.value);
+                const value = compute_es_expression(tags, prop.value);
                 ret[key] = value;
             }
         }
@@ -271,13 +271,13 @@ function computeESExpression(tags, es_expression) {
     throw Error(`not expression: "${es_expression}"`);
 }
 
-function convert_FOR_Goonode(tags, node) {
+function convert_for_goonode(tags, node) {
     let key;
     let value;
     let iterable;
     let content = '';
     const left = node.expression.left;
-    const right = computeESExpression(tags, node.expression.right);
+    const right = compute_es_expression(tags, node.expression.right);
     if (!right) throw Error("wrong for statement!");
     const is_array = Array.isArray(right);
     const is_iterable = right != null && typeof right[Symbol.iterator] === 'function';
@@ -316,10 +316,10 @@ function convert_FOR_Goonode(tags, node) {
     throw Error("wrong for statement!");
 }
 
-function convert_IF_Goonode(tags, node) {
+function convert_if_goonode(tags, node) {
     const truenode = node.contents.find(node => {
         if (node.type === "if" || node.type === "elseif") { // After node.text conversion evaluation, decide whether to render the if body
-            return computeESExpression(tags, node.expression);
+            return compute_es_expression(tags, node.expression);
         }
         if (node.type === "else") return true;
         return false;
@@ -342,11 +342,11 @@ function convert_dom(tags, dom) {
         if (node.type === "raw") {
             content += node.text;
         } else if (node.type === "expression") {
-            content += computeESExpression(tags, node.expression);
+            content += compute_es_expression(tags, node.expression);
         } else if (node.type === "ifs") {
-            content += convert_IF_Goonode(tags, node);
+            content += convert_if_goonode(tags, node);
         } else if (node.type === "for") {
-            content += convert_FOR_Goonode(tags, node);
+            content += convert_for_goonode(tags, node);
         }
     }
     return content;
