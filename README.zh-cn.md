@@ -5,7 +5,7 @@
 - node:
   `pnpm add gooplate`
 - deno:
-  `deno add @fdcn/gooplate`
+  `deno add jsr:@fdcn/gooplate`
 
 ## 用法与例子
 

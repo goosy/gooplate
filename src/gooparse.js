@@ -387,7 +387,6 @@ export function parse_to_dom(template) {
         const range_right = reg_right.lastIndex;
         if (content_right < content_left) {
             current_range[2] = content_right;
-            current_range[2] = content_right;
             throw_wrong_pair(template, raw_range);
         }
 
