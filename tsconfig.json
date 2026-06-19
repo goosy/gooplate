@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "declaration": true,
+        "emitDeclarationOnly": true,
+        "outDir": "types",
+        "rootDir": "lib"
+    },
+    "include": [
+        "lib/index.js"
+    ]
+}

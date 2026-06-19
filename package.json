@@ -20,7 +20,10 @@
         "lib": "lib"
     },
     "scripts": {
-        "build": "rolldown -c",
+        "build": "rolldown -c && pnpm build:cts && pnpm build:mod",
+        "build:cts": "tsc && mv types/index.d.ts lib/index.d.ts && rm -rf types",
+        "build:mod": "echo export * from \"./index.js\"; > lib/mod.ts",
+        "clean": "rm -rf lib types",
         "dev": "rolldown -c -w",
         "test": "node --test",
         "setup": "pnpm install",

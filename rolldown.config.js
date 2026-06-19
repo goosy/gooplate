@@ -6,6 +6,7 @@ export default defineConfig({
     output: [{
         file: pkg.exports["."].import,
         format: 'es',
+        banner: '// @ts-self-types="./index.d.ts"',
     }, {
         file: pkg.exports["."].require,
         format: 'cjs',
