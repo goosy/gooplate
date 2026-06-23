@@ -11,7 +11,6 @@
 
 ```javascript
 import { convert } from "gooplate";
-
 const tags = {
   name: "GD8",
   ID: 8078,
@@ -22,7 +21,6 @@ const tags = {
     { name: "Dave",    age: 29 },
   ],
 };
-
 const template = `group: {{name}}{{ID = ID-8000 }}{{// note: use last 2 digits of ID as the number}}
 ID: {{ID}}
 people:{{for people in peoples}}_
@@ -31,7 +29,6 @@ people:{{for people in peoples}}_
 {{  endif}}_
 {{endfor}}
 `;
-
 console.log(convert(tags, template));
 ```
 
@@ -51,8 +48,6 @@ To apply multiple conversion rules, use the `convert_rules` function — see [`.
 ## Concept
 
 gooplate performs text-based substitution by replacing placeholders in a template with corresponding values. It is similar in effect to data binding in React or Vue, but operates purely on plain text. It has no awareness of any particular format — it does not know whether the text is HTML, Markdown, or anything else.
-
-## Substitution Types
 
 There are five main types of template substitution:
 
@@ -95,15 +90,12 @@ Renders output conditionally. `elseif` and `else` are optional; multiple `elseif
 
 - `{{for value in object}} content: {{value}} {{endfor}}`  
   Iterates over all own property **values** of `object` (not keys).
-
 - `{{for key, value in object}} key: {{key}}, value: {{value}} {{endfor}}`  
   Iterates over both keys and values. When `object` is an Array, keys are numeric indices.
 
 ### Comments
 
 Inside any template expression, `// comment text` can be used for comments. Everything between `//` and the closing delimiter `}}` is treated as a comment and produces no output.
-
----
 
 ## Extended Delimiters
 
@@ -113,57 +105,68 @@ These are primarily intended to help keep templates visually readable. See `exam
 
 ### Left Whitespace Trimming — `{{_`
 
-Use `{{_` to strip all whitespace to the **left** of the opening delimiter. That leading whitespace is treated as part of the delimiter and is not written to the output.
+Use `{{_` to strip all non-newline whitespace (spaces and tabs) to the **left** of the opening delimiter. That leading whitespace is not written to the output.
 
-Example: `   {{_code}}` is equivalent to `{{code}}`.
+- `A \t  {{_code}}` is equivalent to `A{{code}}`.
+
+To also include newlines in the stripped whitespace, use the `_{{` variant instead:
+
+- `A\r\n \t   _{{code}}` is equivalent to `A{{code}}`.
+
+Note: when both sides carry a `_` as in `_{{_code}}`, only `{{_` takes effect. This allows a literal `_` character and any preceding whitespace to be preserved before `{{`.
 
 ### Right Whitespace Trimming — `_}}`
 
-Use `_}}` to strip all whitespace to the **right** of the closing delimiter. That trailing whitespace is treated as part of the delimiter and is not written to the output.
+Use `_}}` to strip all non-newline whitespace (spaces and tabs) to the **right** of the closing delimiter. That trailing whitespace is not written to the output.
 
-Example: `{{code_}}   ` is equivalent to `{{code}}`.
+- `{{code_}}  \t A` is equivalent to `{{code}}A`
 
-### Right Newline Trimming — `}}_`
+To also include newlines in the stripped whitespace, use the `}}_` variant instead:
 
-Use `}}_` to remove the newline at the end of the current line. There must be no other characters between `}}` and `_`; otherwise only `}}` acts as the closing delimiter and the `_` is written to the output as-is.
+- `{{code}}_\r\n \t   \r\nA` is equivalent to `{{code}}A`
 
-If the following line is also blank, that blank line's newline is removed as well — the process repeats until a non-newline character is encountered.
+The `}}_` variant removes the newline immediately following `}}` and any further consecutive blank lines (blank meaning containing only whitespace), stopping as soon as a non-newline character or non-blank line is encountered.
 
-Example:
+Note: when both sides carry a `_` as in `{{code_}}_`, only `_}}` takes effect. This allows a literal `_` character and any following whitespace to be preserved after `}}`.
+
+### Example
 
 ```
-1{{ }}_    No newline to remove here (same effect as normal }}), so _ is output literally
+1{{ _}}    This line has the same effect as a normal closing delimiter, because there is no newline to remove
 2{{ }}_
-    The whitespace before this line trails after line 2 in the output (the newline after line 2 is removed)
+    The whitespace before this line trails after line 2 in the output — the newline after the delimiter is removed
 3{{ }}_
 
 
     This line trails after 3 in the output; the three blank lines above are all removed
+
+\t\t_{{ }}!
+        {{_ }}Done
 ```
 
 Final output:
 
 ```
-1_    No newline to remove here (same effect as normal }}), so _ is output literally
-2    The whitespace before this line trails after line 2 in the output (the newline after line 2 is removed)
-3    This line trails after 3 in the output; the three blank lines above are all removed
+1    This line has the same effect as a normal closing delimiter, because there is no newline to remove
+2    The whitespace before this line trails after line 2 in the output — the newline after the delimiter is removed
+3    This line trails after 3 in the output; the three blank lines above are all removed!
+Done
 ```
 
 ### Extended Delimiter Ambiguity and Escaping
 
-- When a `_` must immediately follow a closing delimiter in output, use `_}}_` — the trailing `_` will be written to the output normally.
+- When a `_` must immediately follow a closing delimiter in output, use `_}}_` — the `_}}` terminates the closing delimiter early, and the trailing `_` is written to output normally.
+- When a `_` must immediately precede an opening delimiter in output, use `_{{_` — the `{{_` look-ahead prevents `_{{` from being recognised, and the leading `_` is written to output normally.
 - When a variable name inside a substitution begins or ends with `_`, leave a space between it and the delimiter to avoid it being interpreted as an extended delimiter. Example: `{{ _var1 + var2_ }}`
-- `{{_}}` is illegal — the parser cannot determine whether the `_` belongs to the opening or closing delimiter, and conversion will halt. Add a space inside the delimiters to disambiguate.
-
----
+- `{{_}}` is illegal — the parser cannot determine whether the `_` belongs to the opening or closing delimiter, and conversion will halt. Add a space inside the delimiters to disambiguate, e.g. `{{_ }}` or `{{ _}}`.
 
 ## Appendix
 
-### Supported Literals
+**Literals**
 
 Boolean values, numbers, strings, arrays, and objects.
 
-### Supported Operators
+**Supported Operators**
 
 | Category | Operators |
 |---|---|

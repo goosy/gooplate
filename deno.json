@@ -1,6 +1,6 @@
 {
     "name": "@fdcn/gooplate",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "license": "MIT",
     "description": "Generate strings from templates with placeholders — fast, lightweight ESM string interpolation library",
     "exports": {

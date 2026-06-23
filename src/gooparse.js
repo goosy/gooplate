@@ -356,19 +356,25 @@ export function parse_to_dom(template) {
         text: "",
         contents: []
     };
-    const reg_left = /[ \t]*\{\{_|\{\{/g; // looking for '{{' or ' {{_'
-    const reg_right = /_\}\}[ \t]*|\}\}_(\r?\n)+|\}\}/g; // looking for '}}_\n' 或 '}}'
+    const reg_left = /[ \r\n\t]*_\{\{(?!_)|[ \t]*\{\{_|\{\{/g; // looking for '{{' or ' {{_' or ' _{{'
+    const reg_right = /_\}\}[ \t]*|\}\}_[ \r\n\t]*|\}\}/g; // looking for '_}} ' or '}}_ ' or '}}'
     let current_index = 0;
     let current_range = [0, 0, 0]; // [left_index, right_index, wrong_index]
 
     // Search for {{.*}} until completed
     for (const match_l of template.matchAll(reg_left)) {
-        const range_left = match_l.index;
-        const content_left = range_left + match_l[0].length;
-        if (range_left < current_index) {
-            current_range[2] = range_left;
+        let range_left = match_l.index;
+        const delimiter_index = range_left + match_l[0].indexOf("{");
+        if (delimiter_index < current_index) {
+            current_range[2] = delimiter_index;
             throw_wrong_pair(template, current_range);
         }
+        if (range_left < current_index) {
+            // Eliminate the overlapping parts of whitespace characters
+            // that lie between extended delimiters.
+            range_left = current_index;
+        }
+        const content_left = match_l.index + match_l[0].length;
         const raw_range = [current_index, range_left];
         const raw_node = {
             type: 'raw',
