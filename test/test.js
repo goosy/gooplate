@@ -84,7 +84,7 @@ suite('convert(tags, template)', () => {
                 strictEqual( // Test array literal
                     convert(
                         { common: [true, 'test'] },
-                        '{{ [1,2,3,"test"][3] _}}_{{_ [...common][1] }}'
+                        '{{ [1,2,3,"test"][3] }}_{{ [...common][1] }}'
                     ),
                     "test_test"
                 );
@@ -93,7 +93,7 @@ suite('convert(tags, template)', () => {
                 strictEqual( // test object literal
                     convert(
                         { n: 1, has: false, common: { name: 'test' } },
-                        '{{ ({n, a: 3, has}).has _}}_{{_ ({...common}).name }}'
+                        '{{ ({n, a: 3, has}).has }}_{{ ({...common}).name }}'
                     ),
                     "false_test"
                 );
@@ -267,27 +267,31 @@ suite('convert(tags, template)', () => {
                     convert({}, '\t \t{{_// comment}}test  {{_ }} \n'),
                     "test \n"
                 );
+                strictEqual( // there are no spaces or tabs
+                    convert({}, 'A{{_// comment}}test'),
+                    "Atest"
+                );
                 strictEqual( // {{_ does not consume a preceding newline
                     convert({}, 'A\n\t {{_// comment}}B'),
                     "A\nB"
                 );
             });
-            test('Remove leading blanks — _{{ strips spaces, tabs and newlines', () => {
-                strictEqual( // _{{ consumes all preceding whitespace including newlines
-                    convert({}, '\t \t_{{// comment}}test'),
+            test('Remove leading blanks — _{{ strips empty and whitespace-only lines', () => {
+                strictEqual( // _{{ consumes all preceding blank lines
+                    convert({}, '\n\t \t_{{// comment}}test'),
                     "test"
                 );
-                strictEqual( // _{{ consumes newlines too
-                    convert({}, 'A\r\n \t _{{// comment}}B'),
-                    "AB"
-                );
-                strictEqual( // when there is no whitespace before _, it is treated as {{
-                    convert({}, 'A_{{// comment}}B'),
-                    "AB"
-                );
                 strictEqual( // multiple blank lines before _{{ are all consumed
-                    convert({}, 'A\n\n\n  _{{// comment}}B'),
-                    "AB"
+                    convert({}, 'A \r\n \n\t _{{// comment}}B'),
+                    "A B"
+                );
+                strictEqual( // when there is no blank line before _, _ renders as raw text
+                    convert({}, 'A_{{// comment}}B'),
+                    "A_B"
+                );
+                strictEqual( // another case of no blank line
+                    convert({}, 'A  _{{// comment}}B'),
+                    "A  _B"
                 );
                 strictEqual( // _{{_ — only {{_ takes effect; leading _ and whitespace are preserved
                     convert({}, '\t \t_{{_// comment}}B'),
@@ -299,31 +303,39 @@ suite('convert(tags, template)', () => {
                     convert({}, '{{ _}}\t   \r\n_\n_\ntest\n'),
                     "\r\n_\n_\ntest\n"
                 );
-            });
-            test('Remove following blanks — }}_ strips spaces, tabs and newlines', () => {
-                strictEqual( // }}_ consumes all following whitespace including newlines
-                    convert({}, '{{// comment}}_  \r\n test\n'),
-                    "test\n"
+                strictEqual( // there are no spaces or tabs
+                    convert({}, 'A {{ _}}test'),
+                    "A test"
                 );
-                strictEqual( // }}_ consumes the newline immediately after }}
+                strictEqual( // _}} does not consume a following newline
+                    convert({}, 'A{{ _}}\n\t B'),
+                    "A\n\t B"
+                );
+            });
+            test('Remove following blanks — }}_ strips empty and whitespace-only lines', () => {
+                strictEqual( // }}_ consumes all following blank lines
+                    convert({}, '{{// comment}}_  \r\n test\n'),
+                    " test\n"
+                );
+                strictEqual( // }}_ consumes the newline immediately after }}_
                     convert({}, '{{// comment}}_\r\n_\ntest\n'),
                     "_\ntest\n"
                 );
                 strictEqual( // }}_ consumes multiple consecutive blank lines
-                    convert({}, '{{// comment}}_\r\n\n\r\n_\ntest\n'),
-                    "_\ntest\n"
+                    convert({}, '{{// comment}}_\r\n\n\r\n  _\ntest\n'),
+                    "  _\ntest\n"
                 );
-                strictEqual( // }}_ stops at the first non-blank content
-                    convert({}, 'A{{// comment}}_\nB'),
-                    "AB"
+                strictEqual( // }}_ stops at the first non-blank line
+                    convert({}, 'A{{// comment}}_\n B'),
+                    "A B"
                 );
                 strictEqual( // }}_ consumes \r\n followed by blank lines with only whitespace
-                    convert({}, 'A{{// comment}}_\r\n \t \n \nB'),
-                    "AB"
+                    convert({}, 'A{{// comment}}_\r\n \t \n \n\tB'),
+                    "A\tB"
                 );
                 strictEqual( // _}}_: only _}} takes effect; trailing _ and whitespace are preserved
-                    convert({}, '{{ _}}_\ntest\n'),
-                    "_\ntest\n"
+                    convert({}, '{{ _}}_\n\r\n\n A'),
+                    "_\n\r\n\n A"
                 );
             });
             test('Overlapping blanks — Eliminate the overlapping parts', () => {

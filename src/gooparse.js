@@ -349,19 +349,21 @@ content 内容: ${template.substring(left, right)}`);
  * @param {string} template
  */
 export function parse_to_dom(template) {
-
     // init document
     current_node = document = {
         type: "root",
         text: "",
         contents: []
     };
-    const reg_left = /[ \r\n\t]*_\{\{(?!_)|[ \t]*\{\{_|\{\{/g; // looking for '{{' or ' {{_' or ' _{{'
-    const reg_right = /_\}\}[ \t]*|\}\}_[ \r\n\t]*|\}\}/g; // looking for '_}} ' or '}}_ ' or '}}'
+
+    // looking for `{{` or ` {{_` or `\n _{{`
+    const reg_left = /((\r?\n)[ \t]*)+_\{\{(?!_)|[ \t]*\{\{_|\{\{/g;
+    // looking for `_}} ` or `}}_ \n` or `}}`
+    const reg_right = /_\}\}[ \t]*|\}\}_([ \t]*(\r?\n))+|\}\}/g;
     let current_index = 0;
     let current_range = [0, 0, 0]; // [left_index, right_index, wrong_index]
 
-    // Search for {{.*}} until completed
+    // Search for `{{.*}}` until completed
     for (const match_l of template.matchAll(reg_left)) {
         let range_left = match_l.index;
         const delimiter_index = range_left + match_l[0].indexOf("{");

@@ -103,53 +103,74 @@ Beyond the standard `{{` and `}}` delimiters, a set of extended delimiters can a
 
 These are primarily intended to help keep templates visually readable. See `example/example.js` for usage examples.
 
-### Left Whitespace Trimming — `{{_`
+In the examples below, assume the variable `code` has the value `@`.
 
-Use `{{_` to strip all non-newline whitespace (spaces and tabs) to the **left** of the opening delimiter. That leading whitespace is not written to the output.
+### Left Whitespace Trimming
 
-- `A \t  {{_code}}` is equivalent to `A{{code}}`.
+For convenience, `{{_` strips whitespace (spaces and tabs) to the left of the opening delimiter, but not newlines. That whitespace is not written to the output.
 
-To also include newlines in the stripped whitespace, use the `_{{` variant instead:
+- `A 	  {{_code}}` outputs→ `A@`.
 
-- `A\r\n \t   _{{code}}` is equivalent to `A{{code}}`.
+### Left Line-merging
 
-Note: when both sides carry a `_` as in `_{{_code}}`, only `{{_` takes effect. This allows a literal `_` character and any preceding whitespace to be preserved before `{{`.
+To also strip blank lines, use the `_{{` variant. It merges the first non-blank line above with the content after `{{` on the current line.
 
-### Right Whitespace Trimming — `_}}`
+The detailed behaviour is:
 
-Use `_}}` to strip all non-newline whitespace (spaces and tabs) to the **right** of the closing delimiter. That trailing whitespace is not written to the output.
+- It walks back to the nearest non-blank line above, stripping the newline at the end of that line and all whitespace between that newline and the `_{{`. Trailing whitespace on the non-blank line itself is preserved.
+- When there is no newline to the left of `_{{`, or when there are non-whitespace characters between the first newline to the left and `_{{`, the `_` falls back to literal character output instead of being treated as a whitespace-trimming marker.
 
-- `{{code_}}  \t A` is equivalent to `{{code}}A`
+- `A 
+ 	   _{{code}}` outputs→ `A @`
+- `A  	   _{{code}}` outputs→ `A  	   _@`
 
-To also include newlines in the stripped whitespace, use the `}}_` variant instead:
+Note: when both sides carry a `_` as in `_{{_code}}`, only `{{_` takes effect. See §Ambiguity and Escaping.
 
-- `{{code}}_\r\n \t   \r\nA` is equivalent to `{{code}}A`
+### Right Whitespace Trimming
 
-The `}}_` variant removes the newline immediately following `}}` and any further consecutive blank lines (blank meaning containing only whitespace), stopping as soon as a non-newline character or non-blank line is encountered.
+For convenience, `_}}` strips all whitespace to the right of the closing delimiter. That whitespace is not written to the output.
 
-Note: when both sides carry a `_` as in `{{code_}}_`, only `_}}` takes effect. This allows a literal `_` character and any following whitespace to be preserved after `}}`.
+- `{{code_}}  	 A` outputs→ `@A`.
+
+### Right Line-merging
+
+To also strip blank lines, use the `}}_` variant. It merges the content before `}}` on the current line with the first non-blank line below.
+
+The detailed behaviour is:
+
+- It strips all whitespace and newlines after `}}_` up to the next non-blank line. Leading whitespace on that non-blank line is preserved.
+- When there is no newline to the right of `}}_`, or when there are non-whitespace characters between `}}_` and the first newline to the right, the `_` falls back to literal character output instead of being treated as a whitespace-trimming marker.
+
+- `{{code}}_
+ 	   
+ A` outputs→ `@ A`
+- `{{code}}_  	   A` outputs→ `@_  	   A`
+
+Note: when both sides carry a `_` as in `{{code_}}_`, only `_}}` takes effect. See §Ambiguity and Escaping.
 
 ### Example
 
 ```
-1{{ _}}    This line has the same effect as a normal closing delimiter, because there is no newline to remove
-2{{ }}_
+1{{// strip trailing whitespace _}}    This line has its trailing whitespace removed
+2{{ }}_        	
     The whitespace before this line trails after line 2 in the output — the newline after the delimiter is removed
 3{{ }}_
 
 
     This line trails after 3 in the output; the three blank lines above are all removed
 
-\t\t_{{ }}!
-        {{_ }}Done
+    		_{{// appends a period at the end of the previous non-blank line}}。
+4    A_{{// these two _ characters are not recognised as extended delimiters}}_B
+        {{_ // strip leading whitespace}}Done
 ```
 
 Final output:
 
 ```
-1    This line has the same effect as a normal closing delimiter, because there is no newline to remove
+1This line has its trailing whitespace removed
 2    The whitespace before this line trails after line 2 in the output — the newline after the delimiter is removed
-3    This line trails after 3 in the output; the three blank lines above are all removed!
+3    This line trails after 3 in the output; the three blank lines above are all removed。
+4    A__B
 Done
 ```
 
